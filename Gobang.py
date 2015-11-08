@@ -7,7 +7,11 @@ import tkinter.messagebox
 #globals
 field = []
 window = tkinter.Tk()
-window.title("Gobang - now 22% more fun!")
+window.title("Gobang - working... for now!")
+menu = Menu(window)
+window.config(menu=menu)
+gamemenu = Menu(menu)
+menu.add_cascade(label="Game", menu=gamemenu)
 
 #spielfeld linke seite
 board_width = 570
@@ -132,8 +136,11 @@ def check_rules(pos_x,pos_y):
 			win4 = win4+win_dir[2]
 	
 	if win1 > 3 or win2 > 3 or win3 > 3 or win4 > 3: 
-		window = tkinter.Tk()
-		window.title("VICTORY")
+		winscreen = tkinter.Tk()
+		winscreen.title("VICTORY")
+		label = Label(winscreen, text="Player "+current_player+" has won!")
+		label.pack()
+		board.unbind("<1>")
 	return
 
 #check surroundings
@@ -174,7 +181,6 @@ def check_direction(pos_x,dir_x,pos_y,dir_y):
 				if next_dir[0][2][0] != "free":
 					for current_dir in next_dir:
 						dir_field.append(current_dir)
-					#dir_field.append(next_dir)
 			return dir_field
 	return "oob"
 
@@ -188,10 +194,12 @@ def create_new_game():
 		collist = []
 		for col in range(0,19):
 			collist.append("free")
-		
 		field.append(collist)
 	draw_board()
 	return
+
+gamemenu.add_command(label="New Game", command=create_new_game)
+gamemenu.add_command(label="Exit", command=window.quit)
 
 #erstellen des spielfelds
 create_new_game()
