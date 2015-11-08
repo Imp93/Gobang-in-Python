@@ -25,10 +25,6 @@ current_player = "w"
 #Funktionen
 
 
-#
-#TODO: Problematik spielfeld um 30 px verkleinern
-#mausposition wird bei klick erkannt, auf der linken seite 
-#
 def get_pos_x(event):
 	x_pos = (event.x/30)
 	x_rest = (x_pos-int(x_pos))*10
@@ -58,6 +54,7 @@ def set_stone(event):
 		else:
 			field[pos_x][pos_y] = "b"
 			switch_player()
+	check_rules(pos_x,pos_y)
 	board.delete("all")
 	draw_board()
 	return
@@ -88,13 +85,46 @@ def draw_board():
 	board.bind("<1>",set_stone)
 	return 
 
-def check_rules():
+def check_rules(pos_x,pos_y):
+	surr = check_surrounding(pos_x,pos_y)
 	
+	for ck_field in surr:
+		print(ck_field[0],ck_field[1])
 	return
 
+#check surroundings
+def check_surrounding(pos_x,pos_y):
+	#fields:
+	#x-1/y-1	x/y-1	x+1/y-1
+	#x-1/y		x/y		x+1/y
+	#x-1/y+1	x/y+1	x+1/y+1
+	print(pos_x-1," ",pos_x," ",pos_x+1)
+	print(pos_y-1," ",pos_y," ",pos_y+1)
+	surr_fields = []
+	#fields above
+	if (pos_y-1) > -1:
+		if (pos_x-1) > -1: 
+			surr_fields.append([[pos_x-1],[pos_y-1]])
+		surr_fields.append([[pos_x],[pos_y-1]])
+		if (pos_x+1) < 20:
+			surr_fields.append([[pos_x+1],[pos_y-1]])
+	#fields level
+	if (pos_x-1) > -1:
+		surr_fields.append([[pos_x-1],[pos_y]])
+	if (pos_x+1) < 20:
+		surr_fields.append([[pos_x+1],[pos_y]])
+	#fields below
+	if (pos_y+1) < 20:
+		if (pos_x-1) > -1: 
+			surr_fields.append([[pos_x-1],[pos_y+1]])
+		surr_fields.append([[pos_x],[pos_y+1]])
+		if (pos_x+1) < 20:
+			surr_fields.append([[pos_x+1],[pos_y+1]])
+	return surr_fields
 
 
-
+#check field (x, y)
+def check_field(pos_x, pos_y): return field[pos_x][pos_y]
 
 
 def create_new_game():
