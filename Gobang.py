@@ -20,7 +20,7 @@ board.pack(side=LEFT)
 
 
 #spielerfarben w und b
-current_player = "w"
+current_player = "b"
 
 #Funktionen
 
@@ -46,15 +46,14 @@ def get_pos_y(event):
 def set_stone(event):
 	pos_x = get_pos_x(event)
 	pos_y = get_pos_y(event)
-	print ("clicked at", pos_x, pos_y, "status is",field[pos_x][pos_y])
+#	print ("clicked at", pos_x, pos_y, "status is",field[pos_x][pos_y])
 	if field[pos_x][pos_y] == "free":
 		if current_player == "w":
 			field[pos_x][pos_y] = "w"
-			switch_player()
 		else:
 			field[pos_x][pos_y] = "b"
-			switch_player()
 	check_rules(pos_x,pos_y)
+	switch_player()
 	board.delete("all")
 	draw_board()
 	return
@@ -87,9 +86,54 @@ def draw_board():
 
 def check_rules(pos_x,pos_y):
 	surr = check_surrounding(pos_x,pos_y)
-	
+	win_count = []
 	for ck_field in surr:
-		print(ck_field[0],ck_field[1])
+		if check_field(ck_field[0][0],ck_field[1][0]) != "free":
+			if check_field(ck_field[0][0],ck_field[1][0]) == current_player:
+				direction_x = ck_field[0][0]-pos_x
+				direction_y = ck_field[1][0]-pos_y
+				dir_win_count = 0
+				dir = check_direction(pos_x,direction_x,pos_y,direction_y)
+				if dir != "oob":
+					for dir_field in dir:
+						if dir_field[2][0] == current_player:
+							dir_win_count = dir_win_count+1
+				
+				win_count.append([direction_x,direction_y,dir_win_count])
+			else:
+				#remove enemy stones (2 in direction), if stone after that in that direction is my own
+				direction_x = ck_field[0][0]-pos_x
+				direction_y = ck_field[1][0]-pos_y
+				dir = check_direction(pos_x,direction_x,pos_y,direction_y)
+				if dir != "oob":
+					if len(dir) > 2:
+						if dir[0][2][0] != current_player and dir[1][2][0] != current_player and dir[2][2][0] == current_player:
+							field[dir[0][0][0]][dir[0][1][0]] = "free"
+							field[dir[1][0][0]][dir[1][1][0]] = "free"
+	#look for win
+	#win1 = -
+	#win2 = I
+	#win3 = \
+	#win4 = /
+	#win1 = win_count[-1][0]
+	win1 = win2 = win3 = win4 = 0
+	for win_dir in win_count:
+		if win_dir[1] == 0:
+			win1 = win1+win_dir[2]
+		if win_dir[0] == 0:
+			win2 = win2+win_dir[2]
+		if win_dir[0] == -1 and win_dir[1] == -1:
+			win3 = win3+win_dir[2]
+		if win_dir[0] == 1 and win_dir[1] == 1:
+			win3 = win3+win_dir[2]
+		if win_dir[0] == 1 and win_dir[1] == -1:
+			win4 = win4+win_dir[2]
+		if win_dir[0] == -1 and win_dir[1] == 1:
+			win4 = win4+win_dir[2]
+	
+	if win1 > 3 or win2 > 3 or win3 > 3 or win4 > 3: 
+		window = tkinter.Tk()
+		window.title("VICTORY")
 	return
 
 #check surroundings
@@ -98,30 +142,41 @@ def check_surrounding(pos_x,pos_y):
 	#x-1/y-1	x/y-1	x+1/y-1
 	#x-1/y		x/y		x+1/y
 	#x-1/y+1	x/y+1	x+1/y+1
-	print(pos_x-1," ",pos_x," ",pos_x+1)
-	print(pos_y-1," ",pos_y," ",pos_y+1)
 	surr_fields = []
 	#fields above
 	if (pos_y-1) > -1:
 		if (pos_x-1) > -1: 
 			surr_fields.append([[pos_x-1],[pos_y-1]])
 		surr_fields.append([[pos_x],[pos_y-1]])
-		if (pos_x+1) < 20:
+		if (pos_x+1) < 19:
 			surr_fields.append([[pos_x+1],[pos_y-1]])
 	#fields level
 	if (pos_x-1) > -1:
 		surr_fields.append([[pos_x-1],[pos_y]])
-	if (pos_x+1) < 20:
+	if (pos_x+1) < 19:
 		surr_fields.append([[pos_x+1],[pos_y]])
 	#fields below
-	if (pos_y+1) < 20:
+	if (pos_y+1) < 19:
 		if (pos_x-1) > -1: 
 			surr_fields.append([[pos_x-1],[pos_y+1]])
 		surr_fields.append([[pos_x],[pos_y+1]])
-		if (pos_x+1) < 20:
+		if (pos_x+1) < 19:
 			surr_fields.append([[pos_x+1],[pos_y+1]])
 	return surr_fields
 
+def check_direction(pos_x,dir_x,pos_y,dir_y):
+	dir_field = []
+	if(pos_y+dir_y) > -1 and (pos_y+dir_y) < 19:
+		if(pos_x+dir_x) > -1 and (pos_x+dir_x) < 19:
+			dir_field.append([[pos_x+dir_x],[pos_y+dir_y],[check_field(pos_x+dir_x,pos_y+dir_y)]])
+			next_dir = check_direction(pos_x+dir_x,dir_x,pos_y+dir_y,dir_y)
+			if next_dir != "oob":
+				if next_dir[0][2][0] != "free":
+					for current_dir in next_dir:
+						dir_field.append(current_dir)
+					#dir_field.append(next_dir)
+			return dir_field
+	return "oob"
 
 #check field (x, y)
 def check_field(pos_x, pos_y): return field[pos_x][pos_y]
@@ -136,26 +191,9 @@ def create_new_game():
 		
 		field.append(collist)
 	draw_board()
-	
 	return
-
-	
-#spiel-array, auf dem alle informationen gespeichert werden
-#1.ebene x-koordinate
-#2.ebene y-koordinate
-#3.ebene zustand (white, black, free)
-
-
-#mainframe = Frame(window, width=10, height=0) 
-#mainframe.pack(side=TOP)
 
 #erstellen des spielfelds
 create_new_game()
-
-#menü rechte seite
-#menu = Canvas(window,width=300, height=spielfeld_height+abstand)
-#menu.pack(side=RIGHT)
-#btn1 = Button(menu,text="Neues Spiel",command = create_new_game)
-#btn1.pack(side=TOP)
 
 window.mainloop()
