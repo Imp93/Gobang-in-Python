@@ -6,28 +6,40 @@ import tkinter.messagebox
 
 #globals
 field = []
-window = tkinter.Tk()
-window.title("Gobang - working... for now!")
-menu = Menu(window)
-window.config(menu=menu)
+game_window = tkinter.Tk()
+game_window.title("Gobang - hurry up and work already, please!")
+menu = Menu(game_window)
+game_window.config(menu=menu)
 gamemenu = Menu(menu)
 menu.add_cascade(label="Game", menu=gamemenu)
 
-#spielfeld linke seite
+#field left side
 board_width = 570
 board_height = 570
 distance = 30
 
-board = Canvas(window,width=board_width+distance, height=board_height+distance)
+board = Canvas(game_window,width=board_width+distance, height=board_height+distance)
 board.config(background="#FFFFFF")
 board.pack(side=LEFT)
 
+#statistics and informations right side
+stats_width = 230
+stats_height = 570
 
-#spielerfarben w und b
+stats_pane = Frame(game_window,width=stats_width, height=stats_height)
+stats_pane.pack(side=LEFT)
+stats_current_player = Label(stats_pane,text="Black", width=30).pack(side=TOP)
+
+#playercolors w und b
 current_player = "b"
 
-#Funktionen
+#AI-difficulties
+#0 = no AI (Player vs Player)
+#1 = random AI (sets stones at random)
+#2 = full AI (Player vs AI)
+ai_level = 0
 
+#functions
 
 def get_pos_x(event):
 	x_pos = (event.x/30)
@@ -56,18 +68,24 @@ def set_stone(event):
 			field[pos_x][pos_y] = "w"
 		else:
 			field[pos_x][pos_y] = "b"
-	check_rules(pos_x,pos_y)
-	switch_player()
-	board.delete("all")
-	draw_board()
+		win = check_rules(pos_x,pos_y)
+		board.delete("all")
+		draw_board()
+		if win == 1:
+			if current_player == "b": player="Black"
+			else: player="White"
+			winscreen(player)
+			board.unbind("<1>")
+		if ai_level == 1: random_ai_turn()
+		if ai_level == 2: ai_turn()
+		switch_player()
 	return
 
 def switch_player():
-	global current_player
-	if current_player=="w":
-		current_player = "b"
-	else:
-		current_player = "w"
+	if current_player=="w":set_player("b")
+	else:set_player("w")
+	
+	#TODO: stuff when player switches (information current player)
 	return
 
 def draw_board():
@@ -136,11 +154,8 @@ def check_rules(pos_x,pos_y):
 			win4 = win4+win_dir[2]
 	
 	if win1 > 3 or win2 > 3 or win3 > 3 or win4 > 3: 
-		winscreen = tkinter.Tk()
-		winscreen.title("VICTORY")
-		label = Label(winscreen, text="Player "+current_player+" has won!")
-		label.pack()
-		board.unbind("<1>")
+		win = 1
+		return win
 	return
 
 #check surroundings
@@ -187,21 +202,60 @@ def check_direction(pos_x,dir_x,pos_y,dir_y):
 #check field (x, y)
 def check_field(pos_x, pos_y): return field[pos_x][pos_y]
 
+def set_ai(level,o_screen=""):
+	global ai_level
+	print("ai_level: ",level)
+	if o_screen != "":o_screen.destroy()
+	ai_level = level
+	return
 
-def create_new_game():
-	print("Neues Spiel")
+def random_ai_turn():
+	
+	return
+
+def set_player(player):
+	global current_player
+	current_player = player
+	return
+
+def winscreen(player):
+	winscreen = Toplevel(game_window)
+	winscreen.title("Player "+player+" has won!")
+	label = Label(winscreen, text="Player "+player+" has won!\nNew Game?\n", width=35)
+	label.pack(side=TOP)
+	button = Button(winscreen, text="New Game", command= lambda: create_new_game(winscreen))
+	button.pack(side=BOTTOM)
+	return
+
+def create_new_game(winscreen = ""):
+	global field
+	global current_player
+	if winscreen != "": winscreen.destroy()
+	current_player = "b"
+	set_ai(0)
+	
+	field = []
 	for row in range(0,19):
 		collist = []
 		for col in range(0,19):
 			collist.append("free")
 		field.append(collist)
 	draw_board()
+	
+	o_screen = Toplevel(game_window)
+	o_screen.title("Optionen")
+	o_screen.lift(aboveThis=game_window)
+	o_label = Label(o_screen, text="Spielmodus wählen", width=25).pack(side=TOP)
+	bt1 = Button(o_screen, text = "Spieler gegen Spieler", command=lambda: set_ai(0,o_screen), width=25).pack(side=TOP)
+	bt2 = Button(o_screen, text = "Spieler gegen Zufalls-KI", command=lambda: set_ai(1,o_screen), width=25).pack(side=TOP)
+	bt3 = Button(o_screen, text = "Spieler gegen KI", command=lambda: set_ai(2,o_screen), width=25).pack(side=TOP)
+	
 	return
 
 gamemenu.add_command(label="New Game", command=create_new_game)
-gamemenu.add_command(label="Exit", command=window.quit)
+gamemenu.add_command(label="Exit", command=game_window.quit)
 
-#erstellen des spielfelds
+#start the game!
 create_new_game()
 
-window.mainloop()
+game_window.mainloop()
