@@ -3,6 +3,7 @@
 from tkinter import *
 import math
 import tkinter.messagebox
+from random import randint
 
 #globals
 field = []
@@ -64,10 +65,10 @@ def set_stone(event):
 	pos_y = get_pos_y(event)
 #	print ("clicked at", pos_x, pos_y, "status is",field[pos_x][pos_y])
 	if field[pos_x][pos_y] == "free":
-		if current_player == "w":
-			field[pos_x][pos_y] = "w"
-		else:
-			field[pos_x][pos_y] = "b"
+		field[pos_x][pos_y] = current_player
+	#	print("player_",current_player," turn")
+	#	print("x:",pos_x)
+	#	print("y:",pos_y)
 		win = check_rules(pos_x,pos_y)
 		board.delete("all")
 		draw_board()
@@ -120,7 +121,7 @@ def check_rules(pos_x,pos_y):
 					for dir_field in dir:
 						if dir_field[2][0] == current_player:
 							dir_win_count = dir_win_count+1
-				
+						else: break
 				win_count.append([direction_x,direction_y,dir_win_count])
 			else:
 				#remove enemy stones (2 in direction), if stone after that in that direction is my own
@@ -137,7 +138,6 @@ def check_rules(pos_x,pos_y):
 	#win2 = I
 	#win3 = \
 	#win4 = /
-	#win1 = win_count[-1][0]
 	win1 = win2 = win3 = win4 = 0
 	for win_dir in win_count:
 		if win_dir[1] == 0:
@@ -202,6 +202,73 @@ def check_direction(pos_x,dir_x,pos_y,dir_y):
 #check field (x, y)
 def check_field(pos_x, pos_y): return field[pos_x][pos_y]
 
+#start_value :0 // adjacend own :+10 // adjacent enemy :+10
+#possibility to remove stones :+20 // 3 enemys in row :+30
+#4 enemys in row :+90 // <- + own stone as 5. :+20
+#3 own stones:+10 // 4 own stones :+100
+def check_field_value(pos_x, pos_y):
+	#also check value in the other direction!
+	print_value_string = ""
+	value = 0
+	surrounding = check_surrounding(pos_x,pos_y)
+	for ck_field in surrounding:
+		field_owner = check_field(ck_field[0][0],ck_field[1][0])
+		#position for direction
+		dir_x = ck_field[0][0]-pos_x
+		dir_y = ck_field[1][0]-pos_y
+		#direction own stone
+		if field_owner != "free":
+			if field_owner == current_player:
+				value=value+10 #own stone
+#				print_value_string = print_value_string+"found own stone, add 10 "
+				fields_dir = check_direction(pos_x,dir_x,pos_y,dir_y)
+				dir_count = 1
+				if fields_dir != "oob":
+					for field_dir in fields_dir:
+						if field_dir[2][0] == current_player:
+							value = value+10 #adjacent own stone after
+#							print_value_string = print_value_string+"found adjacent own stone, add 10 "
+							if dir_count == 3:
+								value = value+10 #bonus 4th stone
+#								print_value_string = print_value_string+"found 3rd own stone, add bonus 10 "
+							if dir_count == 4:
+								value = value+100 #bonus for win with 5th stone
+#								print_value_string = print_value_string+"win with own stone, add 100 "
+						else: break
+						dir_count = dir_count+1 #stone number after first
+						if field_dir[2][0] == "free":break
+				
+			#direction enemy stone
+			if field_owner != current_player:
+				value=value+10 #enemy stone
+#				print_value_string = print_value_string+"found enemy stone, add 10 "
+				fields_dir = check_direction(pos_x,dir_x,pos_y,dir_y)
+				dir_count = 1
+				if fields_dir != "oob":
+					for field_dir in fields_dir:
+						if field_dir[2][0] != current_player:
+							if dir_count == 3:
+								value = value+30 #3 enemy stones in a row
+#								print_value_string = print_value_string+"found 3 enemy stones, add 30 "
+							if dir_count == 4:
+								value = value+90 #4 enemy stones in a row, enemy is winning!
+#								print_value_string = print_value_string+"found enemy stone, dont let him win,  add 90 "
+						if field_dir[2][0] == current_player:
+							if dir_count == 3:
+								value = value+30 #can remove enemy stones or cancle enemy winning
+#								print_value_string = print_value_string+"remove enemy stone or cancel enemy winning, add 20 "
+							break #no danger after that
+						dir_count = dir_count+1
+						if field_dir[2][0] == "free":break
+			
+#			print_value_string = print_value_string+"\n"
+#			print(print_value_string)
+	return value
+
+def negamax(node, depth, color):
+	# need function to value an field
+	return
+
 def set_ai(level,o_screen=""):
 	global ai_level
 	print("ai_level: ",level)
@@ -210,7 +277,56 @@ def set_ai(level,o_screen=""):
 	return
 
 def random_ai_turn():
-	
+	rand_x = randint(0,18)
+	rand_y = randint(0,18)
+	#print("random_ai_turn")
+	#print("x: ",rand_x)
+	#print("y: ",rand_y)
+	if check_field(rand_x,rand_y) == "free":
+		switch_player()
+		field[rand_x][rand_y] = current_player
+		win = check_rules(rand_x,rand_y)
+		board.delete("all")
+		draw_board()
+		if win == 1:
+			if current_player == "b": player="Black"
+			else: player="White"
+			winscreen(player)
+			board.unbind("<1>")
+	else: random_ai_turn()
+	return
+
+def ai_turn():
+	# AI Turn here, USE Negamax Principe
+	#check possible plays
+	switch_player()
+	possible_plays = []
+	best_plays = []
+	randomize_play = 0
+	for ai_pos_x in range(0,18):
+		for ai_pos_y in range(0,18):
+			if check_field(ai_pos_x,ai_pos_y) == "free":
+				field_value = check_field_value(ai_pos_x,ai_pos_y)
+				if field_value > 0: possible_plays.append([ai_pos_x,ai_pos_y,field_value])
+#	print(possible_plays)
+	#sort list
+	#sorted_plays = sorted(possible_plays, key=lambda value: value[2])
+	#print(sorted_plays)
+	max_value = max(value for [x,y,value] in possible_plays)
+	for play in possible_plays:
+		if play[2] == max_value:
+			best_plays.append(play)
+			randomize_play = randomize_play+1
+	play_nr = randint(0,randomize_play)
+	field[best_plays[play_nr-1][0]][best_plays[play_nr-1][1]] = current_player
+	win = check_rules(best_plays[play_nr-1][0],best_plays[play_nr-1][1])
+	board.delete("all")
+	draw_board()
+	if win == 1:
+		if current_player == "b": player="Black"
+		else: player="White"
+		winscreen(player)
+		board.unbind("<1>")
 	return
 
 def set_player(player):
