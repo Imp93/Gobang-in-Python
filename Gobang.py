@@ -13,6 +13,8 @@ menu = Menu(game_window)
 game_window.config(menu=menu)
 gamemenu = Menu(menu)
 menu.add_cascade(label="Game", menu=gamemenu)
+turninfo = Menu(menu)
+menu.add_cascade(label="Gobang - Turn 1 - Player vs Player - Black's turn")
 
 #field left side
 board_width = 570
@@ -42,6 +44,7 @@ current_player = "b"
 #TODO 3 = AI W negamax
 
 ai_level = 0
+turn_count = 1
 game_end = 0
 
 #functions
@@ -82,13 +85,10 @@ def set_stone(event):
 	return
 
 def switch_player():
-	global game_end
 	if current_player=="w":set_player("b")
 	else:set_player("w")
 	
-	if current_player == "b": cur_player = "Black"
-	else: cur_player = "White"
-	if game_end == 0: game_window.title("Gobang - "+cur_player+"'s turn")
+	refresh_turninfo()
 	
 	#TODO: stuff when player switches (information current player)
 	#draw_stats()
@@ -293,11 +293,36 @@ def next_plays(pos_x,pos_y,next_moves = ""):
 	
 	return
 
+def refresh_turninfo():
+	global current_player
+	global ai_level
+	global turn_count
+	global game_end
+	
+	turn_count = turn_count+1
+	game_mode = "Player vs Player"
+	if current_player == "b": cur_player = "Black"
+	else: cur_player = "White"
+	if ai_level == 0: game_mode = "Player vs Player"
+	if ai_level == 1: game_mode = "Player vs Random"
+	if ai_level == 2: game_mode = "Player vs Normal AI"
+	
+	#if game_end == 0: game_window.title("Gobang - Turn "+str(turn_count)+" - "+game_mode+" - "+cur_player+"'s turn")
+	
+	#menu.add_cascade(label="Gobang - Turn "+str(turn_count)+" - "+game_mode+" - "+cur_player+"'s turn")
+	menu.entryconfig(2,label="Turn "+str(turn_count)+" - "+game_mode+" - "+cur_player+"'s turn")
+	return
+
 def set_ai(level,o_screen=""):
 	global ai_level
 	print("ai_level: ",level)
 	if o_screen != "":o_screen.destroy()
 	ai_level = level
+	
+	if ai_level == 0: game_mode = "Player vs Player"
+	if ai_level == 1: game_mode = "Player vs Random"
+	if ai_level == 2: game_mode = "Player vs Normal AI"
+	menu.entryconfig(2,label="Turn 1 - "+game_mode+" - Black's turn")
 	return
 
 def random_ai_turn():
@@ -381,9 +406,11 @@ def create_new_game(winscreen = ""):
 	global field
 	global current_player
 	global game_end
+	global turn_count
 	if winscreen != "": winscreen.destroy()
 	current_player = "b"
 	set_ai(0)
+	turn_count = 1
 	game_end = 0
 	field = []
 	for row in range(0,19):
@@ -393,7 +420,7 @@ def create_new_game(winscreen = ""):
 		field.append(collist)
 	draw_board()
 	
-	game_window.title("Gobang - Black's turn")
+	#game_window.title("Gobang - Turn 1 - Player vs Player - Black's turn")
 	o_screen = Toplevel(game_window)
 	o_screen.title("Options")
 	o_screen.lift(aboveThis=game_window)
