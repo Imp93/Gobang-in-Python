@@ -51,8 +51,8 @@ def set_stone(event):
 	pos_y = get_pos_y(event)
 	if field[pos_x][pos_y] == "free":
 		field[pos_x][pos_y] = current_player
-		draw_board()
 		if check_rules(pos_x,pos_y) == 1:winscreen()
+		draw_board()
 		if ai_level == 1: random_ai_turn()
 		if ai_level == 2: ai_turn()
 		switch_player()
@@ -295,6 +295,5 @@ def create_new_game():
 
 gamemenu.add_command(label="New Game", command=create_new_game)
 gamemenu.add_command(label="Exit", command=game_window.quit)
-
 create_new_game()
 game_window.mainloop()
